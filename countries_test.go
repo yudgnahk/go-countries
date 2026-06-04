@@ -139,8 +139,8 @@ func Test_GetName(t *testing.T) {
 
 func Test_GetCountryInfo(t *testing.T) {
 	tests := []struct {
-		name      string
-		input     string
+		name       string
+		input      string
 		wantAlpha2 string
 		wantAlpha3 string
 		wantCioc   string
