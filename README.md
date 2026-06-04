@@ -84,6 +84,21 @@ alpha2, alpha3, cioc := emoji.GetCodes("Germany")  // Returns "DE", "DEU", "GER"
 alpha2, alpha3, cioc := emoji.GetCodes("UK")       // Returns "GB", "GBR", "GBR"
 ```
 
+### Get All Country Information
+
+Get complete country information from any input (code, name, or flag):
+
+```go
+info := emoji.GetCountryInfo("Vietnam")
+// Returns: CountryInfo{Alpha2: "VN", Alpha3: "VNM", CIOC: "VIE", Name: "Vietnam"}
+
+info = emoji.GetCountryInfo("VNM")
+// Returns: CountryInfo{Alpha2: "VN", Alpha3: "VNM", CIOC: "VIE", Name: "Vietnam"}
+
+info = emoji.GetCountryInfo("🇺🇸")
+// Returns: CountryInfo{Alpha2: "US", Alpha3: "USA", CIOC: "USA", Name: "United States"}
+```
+
 ### Get Flag by Country Name
 
 Find flags using country names (with fuzzy matching):
@@ -270,6 +285,18 @@ Returns all country codes (alpha-2, alpha-3, CIOC) for a given country name.
 - Alpha-2 code (e.g., "VN")
 - Alpha-3 code (e.g., "VNM")
 - CIOC code (e.g., "VIE")
+
+### `GetCountryInfo(input string) CountryInfo`
+Returns complete country information from any input (code, name, alias, or flag emoji).
+
+**Parameters:**
+- `input` - Country code, name, alias, or flag emoji
+
+**Returns:** `CountryInfo` struct with:
+- `Alpha2` - ISO 3166-1 alpha-2 code (e.g., "VN")
+- `Alpha3` - ISO 3166-1 alpha-3 code (e.g., "VNM")
+- `CIOC` - CIOC code (e.g., "VIE")
+- `Name` - Country name (e.g., "Vietnam")
 
 ## Data Maps
 

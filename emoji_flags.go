@@ -422,3 +422,109 @@ func GetCodes(name string) (string, string, string) {
 
 	return alpha2, alpha3, cioc
 }
+
+// CountryInfo holds all country information returned by GetCountryInfo.
+type CountryInfo struct {
+	Alpha2 string // ISO 3166-1 alpha-2 code (e.g., "VN")
+	Alpha3 string // ISO 3166-1 alpha-3 code (e.g., "VNM")
+	CIOC   string // CIOC code (e.g., "VIE")
+	Name   string // Country name (e.g., "Vietnam")
+}
+
+// GetCountryInfo returns all country information for any input.
+// Supports alpha-2 codes, alpha-3 codes, CIOC codes, country names, aliases, and flag emojis.
+// Returns an empty CountryInfo if no match is found.
+//
+// Example:
+//
+//	info := emojiflags.GetCountryInfo("Vietnam")
+//	// Returns: CountryInfo{Alpha2: "VN", Alpha3: "VNM", CIOC: "VIE", Name: "Vietnam"}
+//
+//	info := emojiflags.GetCountryInfo("VNM")
+//	// Returns: CountryInfo{Alpha2: "VN", Alpha3: "VNM", CIOC: "VIE", Name: "Vietnam"}
+//
+//	info := emojiflags.GetCountryInfo("🇺🇸")
+//	// Returns: CountryInfo{Alpha2: "US", Alpha3: "USA", CIOC: "USA", Name: "United States"}
+func GetCountryInfo(input string) CountryInfo {
+	input = strings.TrimSpace(input)
+	if input == "" {
+		return CountryInfo{}
+	}
+
+	normalized := strings.ToUpper(input)
+	var alpha2 string
+
+	// Try as alpha-2 code
+	if _, ok := Cca2CodeMap[normalized]; ok {
+		alpha2 = normalized
+	}
+
+	// Try as alpha-3 code
+	if alpha2 == "" {
+		if code, ok := Cca3CodeMap[normalized]; ok {
+			alpha2 = code
+		}
+	}
+
+	// Try as CIOC code
+	if alpha2 == "" {
+		if code, ok := CiocCodeMap[normalized]; ok {
+			alpha2 = code
+		}
+	}
+
+	// Try as flag emoji
+	if alpha2 == "" && len(input) >= 8 {
+		code := GetCode(input)
+		if code != "" {
+			alpha2 = code
+		}
+	}
+
+	// Try as country name
+	if alpha2 == "" {
+		for code, name := range CountryNames {
+			if strings.ToUpper(name) == normalized {
+				alpha2 = code
+				break
+			}
+		}
+	}
+
+	// Try as alias
+	if alpha2 == "" {
+		if code, ok := CountryAliases[normalized]; ok {
+			alpha2 = code
+		}
+	}
+
+	if alpha2 == "" {
+		return CountryInfo{}
+	}
+
+	// Build result
+	info := CountryInfo{Alpha2: alpha2}
+
+	// Get name
+	if name, ok := CountryNames[alpha2]; ok {
+		info.Name = name
+	}
+
+	// Get alpha-3
+	for code, cca2 := range Cca3CodeMap {
+		if cca2 == alpha2 {
+			info.Alpha3 = code
+			break
+		}
+	}
+
+	// Get CIOC
+	for code, cca2 := range CiocCodeMap {
+		if cca2 == alpha2 {
+			info.CIOC = code
+			break
+		}
+	}
+
+	return info
+}

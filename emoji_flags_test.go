@@ -444,6 +444,45 @@ func Test_GetCodes(t *testing.T) {
 	}
 }
 
+func Test_GetCountryInfo(t *testing.T) {
+	tests := []struct {
+		name      string
+		input     string
+		wantAlpha2 string
+		wantAlpha3 string
+		wantCioc   string
+		wantName   string
+	}{
+		{"From alpha-2 code", "VN", "VN", "VNM", "VIE", "Vietnam"},
+		{"From alpha-3 code", "VNM", "VN", "VNM", "VIE", "Vietnam"},
+		{"From CIOC code", "GER", "DE", "DEU", "GER", "Germany"},
+		{"From country name", "Vietnam", "VN", "VNM", "VIE", "Vietnam"},
+		{"From alias", "UK", "GB", "GBR", "GBR", "United Kingdom"},
+		{"From flag emoji", "🇺🇸", "US", "USA", "USA", "United States"},
+		{"Lowercase input", "vietnam", "VN", "VNM", "VIE", "Vietnam"},
+		{"Invalid input", "NOTACOUNTRY", "", "", "", ""},
+		{"Empty string", "", "", "", "", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := GetCountryInfo(tt.input)
+			if got.Alpha2 != tt.wantAlpha2 {
+				t.Errorf("GetCountryInfo().Alpha2 = %v, want %v", got.Alpha2, tt.wantAlpha2)
+			}
+			if got.Alpha3 != tt.wantAlpha3 {
+				t.Errorf("GetCountryInfo().Alpha3 = %v, want %v", got.Alpha3, tt.wantAlpha3)
+			}
+			if got.CIOC != tt.wantCioc {
+				t.Errorf("GetCountryInfo().CIOC = %v, want %v", got.CIOC, tt.wantCioc)
+			}
+			if got.Name != tt.wantName {
+				t.Errorf("GetCountryInfo().Name = %v, want %v", got.Name, tt.wantName)
+			}
+		})
+	}
+}
+
 func ExampleGetFlag() {
 	flag := GetFlag("VN")
 	fmt.Println(flag)
