@@ -17,10 +17,10 @@ const (
 )
 
 var SpecialEmojiMap = map[string]string{
-	EnglandCode:      "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
-	ScotlandCode:     "🏴󠁧󠁢󠁳󠁣󠁴󠁿",
-	WalesCode:        "🏴󠁧󠁢󠁷󠁬󠁳󠁿",
-	EnglandShortCode: "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+	EnglandCode:      englandTagFlag,
+	ScotlandCode:     scotlandTagFlag,
+	WalesCode:        walesTagFlag,
+	EnglandShortCode: englandTagFlag,
 }
 
 // GetFlag converts a country code (ISO 3166-1 alpha-2, alpha-3, or CIOC) to its corresponding emoji flag.
