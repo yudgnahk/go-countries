@@ -15,7 +15,7 @@ import (
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
-	"github.com/yudgnahk/go-emoji-flags/dtos"
+	"github.com/yudgnahk/go-countries/dtos"
 )
 
 //go:embed templates/country_map.tmpl

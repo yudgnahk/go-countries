@@ -1,4 +1,4 @@
-module github.com/yudgnahk/go-emoji-flags
+module github.com/yudgnahk/go-countries
 
 go 1.24.0
 
