@@ -1,185 +1,111 @@
-# go-emoji-flags
+# go-countries
 
-Resolves country identifiers (codes, names, aliases) to emoji flags in Go.
+Country identifier resolver for Go. Convert between country codes, names, and emoji flags.
 
 ## Features
 
 - ✅ Support for ISO 3166-1 alpha-2 codes (e.g., "VN")
-- ✅ Support for ISO 3166-1 alpha-3 codes (e.g., "VNM") 
+- ✅ Support for ISO 3166-1 alpha-3 codes (e.g., "VNM")
 - ✅ Support for CIOC codes (e.g., "GER")
-- ✅ Support for full country names and aliases (e.g., "Vietnam", "UK")
+- ✅ Support for country names and aliases (e.g., "Vietnam", "UK")
 - ✅ Support for Great Britain subdivisions (England, Scotland, Wales)
-- ✅ Fuzzy matching for typos and variations (e.g., "USA" → "US", "GERM" → "GER")
-- ✅ Consistent emoji output length (no trailing spaces)
+- ✅ Fuzzy matching for typos and variations (Levenshtein distance ≤ 2)
+- ✅ Flag emoji conversion
 
 ## Install
 ```
-go get -u github.com/yudgnahk/go-emoji-flags
+go get -u github.com/yudgnahk/go-countries
 ```
 
 ## Usage
 
-### Basic Usage
+### Get Country Information (Recommended)
+
+The `GetCountryInfo` function is the main entry point. It accepts any input and returns all country information:
+
+```go
+package main
+
+import (
+	"fmt"
+
+	countries "github.com/yudgnahk/go-countries"
+)
+
+func main() {
+	// From country name
+	info := countries.GetCountryInfo("Vietnam")
+	fmt.Printf("Alpha2: %s, Alpha3: %s, CIOC: %s, Name: %s\n", info.Alpha2, info.Alpha3, info.CIOC, info.Name)
+	// Output: Alpha2: VN, Alpha3: VNM, CIOC: VIE, Name: Vietnam
+
+	// From alpha-3 code
+	info = countries.GetCountryInfo("VNM")
+	fmt.Printf("Alpha2: %s, Name: %s\n", info.Alpha2, info.Name)
+	// Output: Alpha2: VN, Name: Vietnam
+
+	// From flag emoji
+	info = countries.GetCountryInfo("🇺🇸")
+	fmt.Printf("Alpha2: %s, Name: %s\n", info.Alpha2, info.Name)
+	// Output: Alpha2: US, Name: United States
+
+	// Fuzzy matching handles typos
+	info = countries.GetCountryInfo("GERM")
+	fmt.Printf("Alpha2: %s, Name: %s\n", info.Alpha2, info.Name)
+	// Output: Alpha2: DE, Name: Germany
+}
+```
+
+### Get Flag Emoji
 
 Convert country codes to flag emojis:
 
 ```go
-package main
-
-import (
-	"fmt"
-
-	emoji "github.com/yudgnahk/go-emoji-flags"
-)
-
-func main() {
-	fmt.Println(emoji.GetFlag("VNM"))   // prints 🇻🇳
-	fmt.Println(emoji.GetFlag("VN"))    // prints 🇻🇳
-	fmt.Println(emoji.GetFlag("BOB"))   // prints (empty string)
-}
+flag := countries.GetFlag("VN")     // Returns "🇻🇳"
+flag = countries.GetFlag("VNM")    // Returns "🇻🇳"
+flag = countries.GetFlag("GER")    // Returns "🇩🇪"
+flag = countries.GetFlag("GB-ENG") // Returns "🏴󠁧󠁢󠁥󠁮󠁧󠁿"
 ```
 
-### Resolve Mixed Input (Recommended)
-
-Use `ResolveFlag()` for input that may be a code, alias, or country name:
-
-```go
-flag, code, kind := emoji.ResolveFlag("United States")
-fmt.Printf("%s %s (%s)\n", flag, code, kind) // 🇺🇸 US (name)
-
-flag, code, kind = emoji.ResolveFlag("UK")
-fmt.Printf("%s %s (%s)\n", flag, code, kind) // 🇬🇧 GB (alias)
-
-flag, code, kind = emoji.ResolveFlag("GERM")
-fmt.Printf("%s %s (%s)\n", flag, code, kind) // 🇩🇪 GER (fuzzy-code)
-```
-
-### Reverse Lookup (Flag to Code)
-
-Convert flag emojis back to country codes:
-
-```go
-code := emoji.GetCode("🇻🇳")    // Returns "VN"
-code := emoji.GetCode("🏴")  // Returns "GB-ENG" (deterministic default)
-```
-
-### Get Country Names
+### Get Country Name
 
 Get country names from codes or flags:
 
 ```go
-name := emoji.GetName("VN")     // Returns "Vietnam"
-name := emoji.GetName("VNM")    // Returns "Vietnam"
-name := emoji.GetName("GER")    // Returns "Germany"
-name := emoji.GetName("🇻🇳")     // Returns "Vietnam"
+name := countries.GetName("VN")     // Returns "Vietnam"
+name = countries.GetName("VNM")    // Returns "Vietnam"
+name = countries.GetName("GER")    // Returns "Germany"
+name = countries.GetName("🇻🇳")     // Returns "Vietnam"
 ```
 
-### Get Flag by Country Name
+## API Reference
 
-Find flags using country names (with fuzzy matching):
+### `GetFlag(countryCode string) string`
+Converts a country code to its emoji flag. Supports ISO 3166-1 alpha-2, alpha-3, CIOC codes, and special subdivisions.
 
-```go
-flag, code := emoji.GetFlagByName("Vietnam")        // Returns "🇻🇳", "VN"
-flag, code := emoji.GetFlagByName("United States")  // Returns "🇺🇸", "US"
-flag, code := emoji.GetFlagByName("USA")            // Returns "🇺🇸", "US" (alias support)
-flag, code := emoji.GetFlagByName("UK")             // Returns "🇬🇧", "GB" (alias support)
-```
+**Parameters:**
+- `countryCode` - 2-letter (VN), 3-letter (VNM, GER), or special codes (GB-ENG)
 
-### Fuzzy Matching
+**Returns:** Flag emoji string, or empty string if not found
 
-Use `GetFlagFuzzy()` to handle typos or variations in country codes:
+### `GetName(input string) string`
+Converts a country code or flag emoji to its country name.
 
-```go
-package main
+**Parameters:**
+- `input` - Country code (alpha-2, alpha-3, CIOC) or flag emoji
 
-import (
-	"fmt"
+**Returns:** Country name, or empty string if not found
 
-	emoji "github.com/yudgnahk/go-emoji-flags"
-)
+### `GetCountryInfo(input string) CountryInfo`
+Returns complete country information for any input. Supports codes, names, aliases, and flag emojis. Includes fuzzy matching for handling typos.
 
-func main() {
-	// Exact match still works
-	flag, code := emoji.GetFlagFuzzy("VNM")
-	fmt.Printf("%s (matched: %s)\n", flag, code) // 🇻🇳 (matched: VNM)
-	
-	// Fuzzy matching handles typos (within distance of 2)
-	flag, code = emoji.GetFlagFuzzy("USA")
-	fmt.Printf("%s (matched: %s)\n", flag, code) // 🇺🇸 (matched: USA)
-	
-	flag, code = emoji.GetFlagFuzzy("GERM")
-	fmt.Printf("%s (matched: %s)\n", flag, code) // 🇩🇪 (matched: GER)
-	
-	flag, code = emoji.GetFlagFuzzy("GB-EN")
-	fmt.Printf("%s (matched: %s)\n", flag, code) // 🏴󠁧󠁢󠁥󠁮󠁧󠁿 (matched: GB-ENG)
-	
-	// Returns empty if no close match found
-	flag, code = emoji.GetFlagFuzzy("ZZZZZ")
-	fmt.Printf("'%s' (matched: '%s')\n", flag, code) // '' (matched: '')
-}
-```
+**Parameters:**
+- `input` - Country code, name, alias, or flag emoji
 
-## Advanced Usage
-
-### Error Handling
-
-The `GetFlag()` function returns an empty string when no match is found:
-
-```go
-flag := emoji.GetFlag("INVALID")
-if flag == "" {
-    log.Println("Country code not found")
-}
-```
-
-### Fuzzy Matching with Validation
-
-Use fuzzy matching to suggest corrections to users:
-
-```go
-userInput := "GERM"
-flag, matchedCode := emoji.GetFlagFuzzy(userInput)
-
-if flag == "" {
-    fmt.Printf("No match found for: %s\n", userInput)
-} else if matchedCode != userInput {
-    fmt.Printf("Did you mean %s? %s\n", matchedCode, flag)
-} else {
-    fmt.Printf("Found: %s\n", flag)
-}
-```
-
-### Batch Processing
-
-Process multiple country codes efficiently:
-
-```go
-codes := []string{"VN", "US", "GB", "INVALID"}
-for _, code := range codes {
-    if flag := emoji.GetFlag(code); flag != "" {
-        fmt.Printf("%s: %s\n", code, flag)
-    } else {
-        fmt.Printf("%s: Not found\n", code)
-    }
-}
-```
-
-## Performance Considerations
-
-- **GetFlag()**: Fast O(1) map lookup - use for known-good codes
-- **GetFlagFuzzy()**: Slower O(n) search - use only for user input that may contain typos
-- **Fuzzy matching distance**: Limited to 2 character edits for performance
-- **Caching**: Consider caching fuzzy results if you process the same queries repeatedly
-
-### Benchmarks
-
-```
-BenchmarkGetFlag-12              35772781    33.55 ns/op      8 B/op   1 allocs/op
-BenchmarkGetFlagFuzzy-12         28222648    41.78 ns/op      8 B/op   1 allocs/op
-BenchmarkGetFlagFuzzyClose-12       13245    90293 ns/op  194969 B/op   4261 allocs/op
-```
-
-*Run `go test -bench=. -benchmem` to see all benchmarks*
+**Returns:** `CountryInfo` struct with:
+- `Alpha2` - ISO 3166-1 alpha-2 code (e.g., "VN")
+- `Alpha3` - ISO 3166-1 alpha-3 code (e.g., "VNM")
+- `CIOC` - CIOC code (e.g., "VIE")
+- `Name` - Country name (e.g., "Vietnam")
 
 ## Supported Codes
 
@@ -192,63 +118,6 @@ BenchmarkGetFlagFuzzyClose-12       13245    90293 ns/op  194969 B/op   4261 all
 - **England**: `GB-ENG` or `ENG`
 - **Scotland**: `GB-SCT` or `SCT`
 - **Wales**: `GB-WLS` or `WLS`
-
-## API Reference
-
-### `GetFlag(countryCode string) string`
-Converts a country code to its emoji flag. Supports ISO 3166-1 alpha-2, alpha-3, CIOC codes, and special subdivisions.
-
-This is a strict code lookup API. For mixed user input, use `ResolveFlag()`.
-
-**Parameters:**
-- `countryCode` - 2-letter (VN), 3-letter (VNM, GER), or special codes (GB-ENG)
-
-**Returns:** Flag emoji string, or empty string if not found
-
-### `GetFlagFuzzy(input string) (string, string)`
-Finds a flag using fuzzy matching (Levenshtein distance ≤ 2). Prefers shorter codes when multiple matches exist.
-
-**Parameters:**
-- `input` - Country code (possibly with typos)
-
-**Returns:** Flag emoji and matched code, or empty strings if no match
-
-### `GetCode(flag string) string`
-Converts a flag emoji to its ISO 3166-1 alpha-2 country code.
-
-For the black flag (`🏴`) shared by GB subdivisions, this function returns `GB-ENG` as deterministic default.
-
-**Parameters:**
-- `flag` - Flag emoji (e.g., 🇻🇳)
-
-**Returns:** Country code (e.g., "VN"), or empty string if not recognized
-
-### `GetName(input string) string`
-Converts a country code or flag emoji to the country name.
-
-**Parameters:**
-- `input` - Country code (alpha-2, alpha-3, CIOC) or flag emoji
-
-**Returns:** Country name, or empty string if not found
-
-### `GetFlagByName(name string) (string, string)`
-Finds a flag by country name using exact or fuzzy matching (Levenshtein distance ≤ 2). Supports common aliases.
-
-**Parameters:**
-- `name` - Country name or alias (e.g., "Vietnam", "USA", "UK")
-
-**Returns:** Flag emoji and matched code, or empty strings if no match
-
-### `ResolveFlag(input string) (string, string, string)`
-Resolves mixed identifiers using this order: exact code, exact alias/name, fuzzy code, fuzzy name.
-
-**Parameters:**
-- `input` - Country code, alias, or country name
-
-**Returns:**
-- Flag emoji
-- Matched code
-- Match kind: `code`, `alias`, `name`, `fuzzy-code`, or `fuzzy-name`
 
 ## Data Maps
 

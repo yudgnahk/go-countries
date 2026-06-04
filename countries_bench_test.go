@@ -32,33 +32,51 @@ func BenchmarkGetFlagInvalid(b *testing.B) {
 	}
 }
 
-func BenchmarkGetFlagFuzzy(b *testing.B) {
+func BenchmarkGetCountryInfo(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		GetFlagFuzzy("VNM")
+		GetCountryInfo("VNM")
 	}
 }
 
-func BenchmarkGetFlagFuzzyExact(b *testing.B) {
+func BenchmarkGetCountryInfoByName(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		GetFlagFuzzy("VN")
+		GetCountryInfo("Vietnam")
 	}
 }
 
-func BenchmarkGetFlagFuzzyTypo(b *testing.B) {
+func BenchmarkGetCountryInfoByFlag(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		GetFlagFuzzy("VIETNM") // distance 3, should fail fast
+		GetCountryInfo("🇻🇳")
 	}
 }
 
-func BenchmarkGetFlagFuzzyClose(b *testing.B) {
+func BenchmarkGetCountryInfoFuzzy(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		GetFlagFuzzy("GERM") // distance 1, should find
+		GetCountryInfo("GERM")
 	}
 }
 
-func BenchmarkGetFlagFuzzyVariation(b *testing.B) {
+func BenchmarkGetCountryInfoInvalid(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		GetFlagFuzzy("USA") // distance 1, should find
+		GetCountryInfo("INVALID")
+	}
+}
+
+func BenchmarkGetName(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		GetName("VN")
+	}
+}
+
+func BenchmarkGetNameByAlpha3(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		GetName("VNM")
+	}
+}
+
+func BenchmarkGetNameByFlag(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		GetName("🇻🇳")
 	}
 }
 
