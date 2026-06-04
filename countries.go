@@ -1,5 +1,7 @@
 package emojiflags
 
+import "strings"
+
 // GetFlag converts a country code (ISO 3166-1 alpha-2, alpha-3, or CIOC) to its corresponding emoji flag.
 // It supports 2-letter codes (e.g., "VN"), 3-letter codes (e.g., "VNM" or "GER"),
 // and special subdivision codes (e.g., "GB-ENG" for England, "ENG" for England short code).
@@ -69,11 +71,26 @@ func GetName(input string) string {
 		}
 	}
 
-	// Try flag emoji
-	if isFlagEmoji(input) {
-		code := flagToCode(input)
-		if name, ok := CountryNames[code]; ok {
+	// Try special subdivision codes
+	if canonical, ok := SpecialCountryMap[normalized]; ok {
+		if name, ok := CountryNames[canonical]; ok {
 			return name
+		}
+	}
+
+	// Try flag emoji (check trimmed input)
+	trimmed := strings.TrimSpace(input)
+	if isFlagEmoji(trimmed) || isSpecialFlag(trimmed) {
+		alpha2 := lookupAlpha2ByFlag(trimmed)
+		if alpha2 != "" {
+			if name, ok := CountryNames[alpha2]; ok {
+				return name
+			}
+			if canonical, ok := SpecialCountryMap[alpha2]; ok {
+				if name, ok := CountryNames[canonical]; ok {
+					return name
+				}
+			}
 		}
 	}
 
@@ -82,7 +99,7 @@ func GetName(input string) string {
 
 // CountryInfo holds all country information returned by GetCountryInfo.
 type CountryInfo struct {
-	Alpha2 string // ISO 3166-1 alpha-2 code (e.g., "VN")
+	Alpha2 string // ISO 3166-1 alpha-2 code (e.g., "VN") or canonical subdivision code (e.g., "GB-ENG")
 	Alpha3 string // ISO 3166-1 alpha-3 code (e.g., "VNM")
 	CIOC   string // CIOC code (e.g., "VIE")
 	Name   string // Country name (e.g., "Vietnam")
@@ -115,20 +132,25 @@ func GetCountryInfo(input string) CountryInfo {
 	// Try exact matches
 	alpha2 := lookupAlpha2ByCode(normalized)
 	if alpha2 == "" {
-		alpha2 = lookupAlpha2ByFlag(input)
-	}
-	if alpha2 == "" {
 		alpha2 = lookupAlpha2ByName(normalized)
 	}
 	if alpha2 == "" {
 		alpha2 = lookupAlpha2ByAlias(normalized)
 	}
 
-	// Try special subdivision codes
+	// Try flag emoji (check trimmed input)
 	if alpha2 == "" {
-		if _, ok := SpecialEmojiMap[normalized]; ok {
-			info := CountryInfo{Alpha2: normalized}
-			if name, ok := CountryNames[normalized]; ok {
+		trimmed := strings.TrimSpace(input)
+		if isFlagEmoji(trimmed) || isSpecialFlag(trimmed) {
+			alpha2 = lookupAlpha2ByFlag(trimmed)
+		}
+	}
+
+	// Try special subdivision codes with canonicalization
+	if alpha2 == "" {
+		if canonical, ok := SpecialCountryMap[normalized]; ok {
+			info := buildCountryInfo(canonical)
+			if name, ok := CountryNames[canonical]; ok {
 				info.Name = name
 			}
 			return info

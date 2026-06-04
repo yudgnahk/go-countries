@@ -17,6 +17,16 @@ var SpecialEmojiMap = map[string]string{
 	EnglandShortCode: englandTagFlag,
 }
 
+// specialFlagToCode provides reverse lookup for tag-sequence subdivision flags.
+var specialFlagToCode map[string]string
+
+func init() {
+	specialFlagToCode = make(map[string]string, len(SpecialEmojiMap))
+	for code, flag := range SpecialEmojiMap {
+		specialFlagToCode[flag] = code
+	}
+}
+
 // codeToFlag converts a 2-letter ISO code to its emoji flag representation.
 func codeToFlag(code string) string {
 	if len(code) != 2 {
@@ -53,50 +63,10 @@ func isFlagEmoji(input string) bool {
 		runes[1] >= 0x1F1E6 && runes[1] <= 0x1F1FF
 }
 
-// levenshtein calculates the Levenshtein distance between two strings.
-// This measures the minimum number of single-character edits (insertions,
-// deletions, or substitutions) required to change one string into the other.
-func levenshtein(s1, s2 string) int {
-	if len(s1) == 0 {
-		return len(s2)
-	}
-	if len(s2) == 0 {
-		return len(s1)
-	}
-
-	matrix := make([][]int, len(s1)+1)
-	for i := range matrix {
-		matrix[i] = make([]int, len(s2)+1)
-		matrix[i][0] = i
-	}
-	for j := range matrix[0] {
-		matrix[0][j] = j
-	}
-
-	for i := 1; i <= len(s1); i++ {
-		for j := 1; j <= len(s2); j++ {
-			cost := 1
-			if s1[i-1] == s2[j-1] {
-				cost = 0
-			}
-
-			deletion := matrix[i-1][j] + 1
-			insertion := matrix[i][j-1] + 1
-			substitution := matrix[i-1][j-1] + cost
-
-			min := deletion
-			if insertion < min {
-				min = insertion
-			}
-			if substitution < min {
-				min = substitution
-			}
-
-			matrix[i][j] = min
-		}
-	}
-
-	return matrix[len(s1)][len(s2)]
+// isSpecialFlag checks if the input string is a tag-sequence subdivision flag.
+func isSpecialFlag(input string) bool {
+	_, ok := specialFlagToCode[input]
+	return ok
 }
 
 // normalizeUpper trims whitespace and converts to uppercase.
@@ -142,16 +112,74 @@ func lookupAlpha2ByAlias(normalized string) string {
 	return ""
 }
 
-// lookupAlpha2ByFlag tries to find alpha-2 code from flag emoji.
+// lookupAlpha2ByFlag tries to find alpha-2 code from flag emoji (regional indicator or tag-sequence).
 func lookupAlpha2ByFlag(input string) string {
-	if !isFlagEmoji(input) {
-		return ""
+	trimmed := strings.TrimSpace(input)
+
+	// Check for tag-sequence subdivision flags first
+	if isSpecialFlag(trimmed) {
+		if code, ok := specialFlagToCode[trimmed]; ok {
+			return code
+		}
 	}
-	code := flagToCode(input)
-	if _, ok := Cca2CodeMap[code]; ok {
-		return code
+
+	// Check for standard regional indicator flags
+	if isFlagEmoji(trimmed) {
+		code := flagToCode(trimmed)
+		if _, ok := Cca2CodeMap[code]; ok {
+			return code
+		}
 	}
+
 	return ""
+}
+
+// levenshtein calculates the Levenshtein distance between two strings using runes.
+// This correctly handles multi-byte UTF-8 characters (e.g., "Curaçao", "Réunion").
+func levenshtein(s1, s2 string) int {
+	runes1 := []rune(s1)
+	runes2 := []rune(s2)
+
+	if len(runes1) == 0 {
+		return len(runes2)
+	}
+	if len(runes2) == 0 {
+		return len(runes1)
+	}
+
+	matrix := make([][]int, len(runes1)+1)
+	for i := range matrix {
+		matrix[i] = make([]int, len(runes2)+1)
+		matrix[i][0] = i
+	}
+	for j := range matrix[0] {
+		matrix[0][j] = j
+	}
+
+	for i := 1; i <= len(runes1); i++ {
+		for j := 1; j <= len(runes2); j++ {
+			cost := 1
+			if runes1[i-1] == runes2[j-1] {
+				cost = 0
+			}
+
+			deletion := matrix[i-1][j] + 1
+			insertion := matrix[i][j-1] + 1
+			substitution := matrix[i-1][j-1] + cost
+
+			min := deletion
+			if insertion < min {
+				min = insertion
+			}
+			if substitution < min {
+				min = substitution
+			}
+
+			matrix[i][j] = min
+		}
+	}
+
+	return matrix[len(runes1)][len(runes2)]
 }
 
 // fuzzyMatchCode finds the closest matching code using Levenshtein distance.
@@ -186,6 +214,16 @@ func fuzzyMatchCode(normalized string) string {
 		if dist < bestDistance || (dist == bestDistance && len(code) < bestLength) {
 			bestDistance = dist
 			bestMatch = code
+			bestLength = len(code)
+		}
+	}
+
+	// Check special subdivision codes
+	for code := range SpecialCountryMap {
+		dist := levenshtein(normalized, code)
+		if dist < bestDistance || (dist == bestDistance && len(code) < bestLength) {
+			bestDistance = dist
+			bestMatch = SpecialCountryMap[code]
 			bestLength = len(code)
 		}
 	}
