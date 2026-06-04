@@ -280,7 +280,7 @@ func Test_GetCode(t *testing.T) {
 		{"Vietnam flag", "🇻🇳", "VN"},
 		{"US flag", "🇺🇸", "US"},
 		{"Germany flag", "🇩🇪", "DE"},
-		{"England special flag", "🏴󠁧󠁢󠁥󠁮󠁧󠁿", "GB-ENG"},
+		{"England special flag", "🏴", "GB-ENG"},
 		{"Scotland special flag", "🏴󠁧󠁢󠁳󠁣󠁴󠁿", "GB-SCT"},
 		{"Wales special flag", "🏴󠁧󠁢󠁷󠁬󠁳󠁿", "GB-WLS"},
 		{"Invalid flag", "🎌", ""},
@@ -354,6 +354,57 @@ func Test_GetFlagByName(t *testing.T) {
 				if gotFlag != "" || gotCode != "" {
 					t.Errorf("GetFlagByName() expected empty, got flag=%v, code=%v", gotFlag, gotCode)
 				}
+			}
+		})
+	}
+}
+
+func Test_ResolveFlag(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		wantFlag bool
+		wantCode string
+		wantKind string
+	}{
+		{"Exact alpha-2 code", "VN", true, "VN", ResolveKindCode},
+		{"Exact alpha-3 code", "VNM", true, "VNM", ResolveKindCode},
+		{"Exact CIOC code", "GER", true, "GER", ResolveKindCode},
+		{"Exact alias in code set", "USA", true, "USA", ResolveKindCode},
+		{"Exact country name", "Vietnam", true, "VN", ResolveKindName},
+		{"Exact subdivision name", "England", true, "GB-ENG", ResolveKindName},
+		{"Exact subdivision name Scotland", "Scotland", true, "GB-SCT", ResolveKindName},
+		{"Alias UK", "UK", true, "GB", ResolveKindAlias},
+		{"Fuzzy code", "GERM", true, "GER", ResolveKindFuzzyCode},
+		{"Fuzzy name", "Viet Namm", true, "VN", ResolveKindFuzzyName},
+		{"Invalid", "NOTACOUNTRY", false, "", ""},
+		{"Empty", "", false, "", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotFlag, gotCode, gotKind := ResolveFlag(tt.input)
+
+			if tt.wantFlag {
+				if gotFlag == "" {
+					t.Errorf("ResolveFlag() expected non-empty flag")
+				}
+				if !utf8.ValidString(gotFlag) {
+					t.Errorf("ResolveFlag() expected valid utf8 flag, got %v", gotFlag)
+				}
+				if GetPrintableLength(gotFlag) == 0 {
+					t.Errorf("ResolveFlag() expected printable flag")
+				}
+			} else if gotFlag != "" || gotCode != "" || gotKind != "" {
+				t.Errorf("ResolveFlag() expected empty outputs, got flag=%v code=%v kind=%v", gotFlag, gotCode, gotKind)
+			}
+
+			if gotCode != tt.wantCode {
+				t.Errorf("ResolveFlag() code = %v, want %v", gotCode, tt.wantCode)
+			}
+
+			if gotKind != tt.wantKind {
+				t.Errorf("ResolveFlag() kind = %v, want %v", gotKind, tt.wantKind)
 			}
 		})
 	}

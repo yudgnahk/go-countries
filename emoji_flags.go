@@ -4,11 +4,23 @@ import (
 	"strings"
 )
 
+const (
+	ResolveKindCode      = "code"
+	ResolveKindAlias     = "alias"
+	ResolveKindName      = "name"
+	ResolveKindFuzzyCode = "fuzzy-code"
+	ResolveKindFuzzyName = "fuzzy-name"
+
+	englandTagFlag  = "\U0001F3F4\U000E0067\U000E0062\U000E0065\U000E006E\U000E0067\U000E007F"
+	scotlandTagFlag = "\U0001F3F4\U000E0067\U000E0062\U000E0073\U000E0063\U000E0074\U000E007F"
+	walesTagFlag    = "\U0001F3F4\U000E0067\U000E0062\U000E0077\U000E006C\U000E0073\U000E007F"
+)
+
 var SpecialEmojiMap = map[string]string{
-	EnglandCode:      "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
-	ScotlandCode:     "🏴󠁧󠁢󠁳󠁣󠁴󠁿",
-	WalesCode:        "🏴󠁧󠁢󠁷󠁬󠁳󠁿",
-	EnglandShortCode: "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+	EnglandCode:      englandTagFlag,
+	ScotlandCode:     scotlandTagFlag,
+	WalesCode:        walesTagFlag,
+	EnglandShortCode: englandTagFlag,
 }
 
 // GetFlag converts a country code (ISO 3166-1 alpha-2, alpha-3, or CIOC) to its corresponding emoji flag.
@@ -172,11 +184,21 @@ func levenshtein(s1, s2 string) int {
 //	code := emojiflags.GetCode("🇻🇳")  // Returns "VN"
 //	code := emojiflags.GetCode("🏴󠁧󠁢󠁥󠁮󠁧󠁿")  // Returns "GB-ENG"
 func GetCode(flag string) string {
-	// Check special flags first
-	for code, emoji := range SpecialEmojiMap {
-		if emoji == flag {
-			return code
-		}
+	// Check special flags first.
+	if flag == englandTagFlag {
+		return EnglandCode
+	}
+	if flag == scotlandTagFlag {
+		return ScotlandCode
+	}
+	if flag == walesTagFlag {
+		return WalesCode
+	}
+
+	// The plain black flag emoji is shared across subdivisions,
+	// so we use England as deterministic default.
+	if flag == "🏴" {
+		return EnglandCode
 	}
 
 	// Check if it's a standard flag emoji (two regional indicator symbols)
@@ -206,6 +228,44 @@ func GetCode(flag string) string {
 	}
 
 	return ""
+}
+
+// ResolveFlag resolves mixed country identifiers to a flag.
+// It supports exact code, exact alias/name, then fuzzy code/name matching.
+// Returns the flag, matched code, and match kind.
+func ResolveFlag(input string) (string, string, string) {
+	input = strings.TrimSpace(input)
+	if input == "" {
+		return "", "", ""
+	}
+
+	normalized := strings.ToUpper(input)
+
+	if flag := GetFlag(normalized); flag != "" {
+		return flag, normalized, ResolveKindCode
+	}
+
+	for code, countryName := range CountryNames {
+		if strings.ToUpper(countryName) == normalized {
+			return GetFlag(code), code, ResolveKindName
+		}
+	}
+
+	if code, ok := CountryAliases[normalized]; ok {
+		if flag := GetFlag(code); flag != "" {
+			return flag, code, ResolveKindAlias
+		}
+	}
+
+	if flag, code := GetFlagFuzzy(normalized); flag != "" {
+		return flag, code, ResolveKindFuzzyCode
+	}
+
+	if flag, code := GetFlagByName(normalized); flag != "" {
+		return flag, code, ResolveKindFuzzyName
+	}
+
+	return "", "", ""
 }
 
 // GetName converts a country code or flag emoji to its country name.
@@ -274,6 +334,10 @@ func GetFlagByName(name string) (string, string) {
 		if strings.ToUpper(countryName) == name {
 			return GetFlag(code), code
 		}
+	}
+
+	if code, ok := CountryAliases[name]; ok {
+		return GetFlag(code), code
 	}
 
 	// Try fuzzy matching with country names

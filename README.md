@@ -1,12 +1,13 @@
 # go-emoji-flags
 
-Converts a string country code to an emoji in Go.
+Resolves country identifiers (codes, names, aliases) to emoji flags in Go.
 
 ## Features
 
 - ✅ Support for ISO 3166-1 alpha-2 codes (e.g., "VN")
 - ✅ Support for ISO 3166-1 alpha-3 codes (e.g., "VNM") 
 - ✅ Support for CIOC codes (e.g., "GER")
+- ✅ Support for full country names and aliases (e.g., "Vietnam", "UK")
 - ✅ Support for Great Britain subdivisions (England, Scotland, Wales)
 - ✅ Fuzzy matching for typos and variations (e.g., "USA" → "US", "GERM" → "GER")
 - ✅ Consistent emoji output length (no trailing spaces)
@@ -38,13 +39,28 @@ func main() {
 }
 ```
 
+### Resolve Mixed Input (Recommended)
+
+Use `ResolveFlag()` for input that may be a code, alias, or country name:
+
+```go
+flag, code, kind := emoji.ResolveFlag("United States")
+fmt.Printf("%s %s (%s)\n", flag, code, kind) // 🇺🇸 US (name)
+
+flag, code, kind = emoji.ResolveFlag("UK")
+fmt.Printf("%s %s (%s)\n", flag, code, kind) // 🇬🇧 GB (alias)
+
+flag, code, kind = emoji.ResolveFlag("GERM")
+fmt.Printf("%s %s (%s)\n", flag, code, kind) // 🇩🇪 GER (fuzzy-code)
+```
+
 ### Reverse Lookup (Flag to Code)
 
 Convert flag emojis back to country codes:
 
 ```go
 code := emoji.GetCode("🇻🇳")    // Returns "VN"
-code := emoji.GetCode("🏴󠁧󠁢󠁥󠁮󠁧󠁿")  // Returns "GB-ENG"
+code := emoji.GetCode("🏴")  // Returns "GB-ENG" (deterministic default)
 ```
 
 ### Get Country Names
@@ -182,6 +198,8 @@ BenchmarkGetFlagFuzzyClose-12       13245    90293 ns/op  194969 B/op   4261 all
 ### `GetFlag(countryCode string) string`
 Converts a country code to its emoji flag. Supports ISO 3166-1 alpha-2, alpha-3, CIOC codes, and special subdivisions.
 
+This is a strict code lookup API. For mixed user input, use `ResolveFlag()`.
+
 **Parameters:**
 - `countryCode` - 2-letter (VN), 3-letter (VNM, GER), or special codes (GB-ENG)
 
@@ -197,6 +215,8 @@ Finds a flag using fuzzy matching (Levenshtein distance ≤ 2). Prefers shorter 
 
 ### `GetCode(flag string) string`
 Converts a flag emoji to its ISO 3166-1 alpha-2 country code.
+
+For the black flag (`🏴`) shared by GB subdivisions, this function returns `GB-ENG` as deterministic default.
 
 **Parameters:**
 - `flag` - Flag emoji (e.g., 🇻🇳)
@@ -218,6 +238,17 @@ Finds a flag by country name using exact or fuzzy matching (Levenshtein distance
 - `name` - Country name or alias (e.g., "Vietnam", "USA", "UK")
 
 **Returns:** Flag emoji and matched code, or empty strings if no match
+
+### `ResolveFlag(input string) (string, string, string)`
+Resolves mixed identifiers using this order: exact code, exact alias/name, fuzzy code, fuzzy name.
+
+**Parameters:**
+- `input` - Country code, alias, or country name
+
+**Returns:**
+- Flag emoji
+- Matched code
+- Match kind: `code`, `alias`, `name`, `fuzzy-code`, or `fuzzy-name`
 
 ## Data Maps
 
