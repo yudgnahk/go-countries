@@ -245,15 +245,15 @@ func ResolveFlag(input string) (string, string, string) {
 		return flag, normalized, ResolveKindCode
 	}
 
-	if code, ok := CountryAliases[normalized]; ok {
-		if flag := GetFlag(code); flag != "" {
-			return flag, code, ResolveKindAlias
-		}
-	}
-
 	for code, countryName := range CountryNames {
 		if strings.ToUpper(countryName) == normalized {
 			return GetFlag(code), code, ResolveKindName
+		}
+	}
+
+	if code, ok := CountryAliases[normalized]; ok {
+		if flag := GetFlag(code); flag != "" {
+			return flag, code, ResolveKindAlias
 		}
 	}
 

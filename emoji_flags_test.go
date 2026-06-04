@@ -372,6 +372,8 @@ func Test_ResolveFlag(t *testing.T) {
 		{"Exact CIOC code", "GER", true, "GER", ResolveKindCode},
 		{"Exact alias in code set", "USA", true, "USA", ResolveKindCode},
 		{"Exact country name", "Vietnam", true, "VN", ResolveKindName},
+		{"Exact subdivision name", "England", true, "GB-ENG", ResolveKindName},
+		{"Exact subdivision name Scotland", "Scotland", true, "GB-SCT", ResolveKindName},
 		{"Alias UK", "UK", true, "GB", ResolveKindAlias},
 		{"Fuzzy code", "GERM", true, "GER", ResolveKindFuzzyCode},
 		{"Fuzzy name", "Viet Namm", true, "VN", ResolveKindFuzzyName},
