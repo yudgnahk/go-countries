@@ -410,6 +410,40 @@ func Test_ResolveFlag(t *testing.T) {
 	}
 }
 
+func Test_GetCodes(t *testing.T) {
+	tests := []struct {
+		name      string
+		input     string
+		wantAlpha2 string
+		wantAlpha3 string
+		wantCioc   string
+	}{
+		{"Vietnam", "Vietnam", "VN", "VNM", "VIE"},
+		{"Germany", "Germany", "DE", "DEU", "GER"},
+		{"United States", "United States", "US", "USA", "USA"},
+		{"England subdivision", "England", "GB-ENG", "", ""},
+		{"Alias UK", "UK", "GB", "GBR", "GBR"},
+		{"Lowercase", "vietnam", "VN", "VNM", "VIE"},
+		{"Invalid name", "Notacountry", "", "", ""},
+		{"Empty string", "", "", "", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotAlpha2, gotAlpha3, gotCioc := GetCodes(tt.input)
+			if gotAlpha2 != tt.wantAlpha2 {
+				t.Errorf("GetCodes() alpha2 = %v, want %v", gotAlpha2, tt.wantAlpha2)
+			}
+			if gotAlpha3 != tt.wantAlpha3 {
+				t.Errorf("GetCodes() alpha3 = %v, want %v", gotAlpha3, tt.wantAlpha3)
+			}
+			if gotCioc != tt.wantCioc {
+				t.Errorf("GetCodes() cioc = %v, want %v", gotCioc, tt.wantCioc)
+			}
+		})
+	}
+}
+
 func ExampleGetFlag() {
 	flag := GetFlag("VN")
 	fmt.Println(flag)

@@ -74,6 +74,16 @@ name := emoji.GetName("GER")    // Returns "Germany"
 name := emoji.GetName("🇻🇳")     // Returns "Vietnam"
 ```
 
+### Get All Codes by Country Name
+
+Get all country codes (alpha-2, alpha-3, CIOC) from a country name:
+
+```go
+alpha2, alpha3, cioc := emoji.GetCodes("Vietnam")  // Returns "VN", "VNM", "VIE"
+alpha2, alpha3, cioc := emoji.GetCodes("Germany")  // Returns "DE", "DEU", "GER"
+alpha2, alpha3, cioc := emoji.GetCodes("UK")       // Returns "GB", "GBR", "GBR"
+```
+
 ### Get Flag by Country Name
 
 Find flags using country names (with fuzzy matching):
@@ -249,6 +259,17 @@ Resolves mixed identifiers using this order: exact code, exact alias/name, fuzzy
 - Flag emoji
 - Matched code
 - Match kind: `code`, `alias`, `name`, `fuzzy-code`, or `fuzzy-name`
+
+### `GetCodes(name string) (string, string, string)`
+Returns all country codes (alpha-2, alpha-3, CIOC) for a given country name.
+
+**Parameters:**
+- `name` - Country name or alias (e.g., "Vietnam", "Germany", "UK")
+
+**Returns:**
+- Alpha-2 code (e.g., "VN")
+- Alpha-3 code (e.g., "VNM")
+- CIOC code (e.g., "VIE")
 
 ## Data Maps
 

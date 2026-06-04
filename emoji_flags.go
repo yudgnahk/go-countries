@@ -368,3 +368,57 @@ func GetFlagByName(name string) (string, string) {
 
 	return "", ""
 }
+
+// GetCodes returns all country codes (alpha-2, alpha-3, CIOC) for a given country name.
+// Returns empty strings for codes that are not found.
+//
+// Example:
+//
+//	alpha2, alpha3, cioc := emojiflags.GetCodes("Vietnam")  // Returns "VN", "VNM", "VIE"
+//	alpha2, alpha3, cioc := emojiflags.GetCodes("Germany")  // Returns "DE", "DEU", "GER"
+func GetCodes(name string) (string, string, string) {
+	name = strings.ToUpper(name)
+	if name == "" {
+		return "", "", ""
+	}
+
+	// Find alpha-2 code from country name
+	var alpha2 string
+	for code, countryName := range CountryNames {
+		if strings.ToUpper(countryName) == name {
+			alpha2 = code
+			break
+		}
+	}
+
+	// Also check aliases
+	if alpha2 == "" {
+		if code, ok := CountryAliases[name]; ok {
+			alpha2 = code
+		}
+	}
+
+	if alpha2 == "" {
+		return "", "", ""
+	}
+
+	// Find alpha-3 code from alpha-2
+	var alpha3 string
+	for code, cca2 := range Cca3CodeMap {
+		if cca2 == alpha2 {
+			alpha3 = code
+			break
+		}
+	}
+
+	// Find CIOC code from alpha-2
+	var cioc string
+	for code, cca2 := range CiocCodeMap {
+		if cca2 == alpha2 {
+			cioc = code
+			break
+		}
+	}
+
+	return alpha2, alpha3, cioc
+}
