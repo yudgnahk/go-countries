@@ -9,6 +9,7 @@ Country identifier resolver for Go. Convert between country codes, names, and em
 - ✅ Support for CIOC codes (e.g., "GER")
 - ✅ Support for country names and aliases (e.g., "Vietnam", "UK")
 - ✅ Support for Great Britain subdivisions (England, Scotland, Wales)
+- ✅ Support for historical nations (USSR, Yugoslavia, Czechoslovakia, East Germany, Serbia & Montenegro, Zaire) via ISO 3166-1, IOC and ISO 3166-3 codes
 - ✅ Fuzzy matching for typos and variations (Levenshtein distance ≤ 2)
 - ✅ Flag emoji conversion
 
@@ -119,6 +120,45 @@ Returns complete country information for any input. Supports codes, names, alias
 - **Scotland**: `GB-SCT` or `SCT`
 - **Wales**: `GB-WLS` or `WLS`
 
+### Historical Nations
+
+Nations that have participated in the FIFA World Cup finals but no longer
+exist as independent countries. Each is resolved by any of its known codes
+(alpha-2, alpha-3, IOC/CIOC, or ISO 3166-3 alpha-4). The two-letter
+alpha-2 `CS` was used by both Czechoslovakia (1974–1993) and Serbia and
+Montenegro (2003–2006); use the alpha-3 / CIOC / alpha-4 codes to
+disambiguate.
+
+| Country | Alpha-2 | Alpha-3 | CIOC | Alpha-4 |
+|---|---|---|---|---|
+| Soviet Union | `SU` | `SUN` | `URS` | `SUHH` |
+| Yugoslavia | `YU` | `YUG` | `YUG` | `YUCS` |
+| Czechoslovakia | `CS`* | `CSK` | `TCH` | `CSHH` |
+| Serbia and Montenegro | `CS`* | `SCG` | `SCG` | `CSXX` |
+| East Germany | `DD` | `DDR` | `GDR` | `DDDE` |
+| Zaire | `ZR` | `ZAR` | `ZAI` | `ZRCD` |
+
+\* `CS` is ambiguous; bare `CS` resolves to Czechoslovakia (the earlier
+user). Use `CSK` / `TCH` / `CSHH` for Czechoslovakia and `SCG` / `CSXX`
+for Serbia and Montenegro.
+
+The exported `HistoricalCountries` slice is the source of truth and can be
+iterated to enumerate the supported historical nations:
+
+```go
+for _, hc := range countries.HistoricalCountries {
+    fmt.Printf("%s (%s) → %s\n", hc.Name, hc.Alpha4, countries.GetFlag(hc.Alpha2))
+}
+```
+
+> **Note on rendering.** The flag for each historical entry is a valid
+> pair of Regional Indicator symbols, but the codes are deprecated in
+> CLDR and are not in Unicode's `emoji-sequences.txt`. Stock iOS, macOS,
+> Android and Windows render them as a generic "missing flag"
+> placeholder. For proper historical flag glyphs, load a webfont such
+> as [BabelStone Flags](https://www.babelstone.co.uk/Fonts/Flags.html)
+> that includes the historical country designs.
+
 ## Data Maps
 
 The library provides access to several data maps:
@@ -129,6 +169,8 @@ The library provides access to several data maps:
 - `Cca3CodeMap` - map[string]string: ISO alpha-3 to alpha-2 code mappings
 - `CiocCodeMap` - map[string]string: CIOC to alpha-2 code mappings
 - `SpecialEmojiMap` - map[string]string: Special subdivision codes to emoji flags
+- `HistoricalCountries` - []HistoricalCountry: Historical nations supported by the library
+- `SpecialCountryMap` - map[string]string: Special subdivision canonical codes
 
 ### Special thanks to those repositories which helps me so much:
  - [go-emoji-flag](https://github.com/jayco/go-emoji-flag)

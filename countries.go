@@ -16,6 +16,12 @@ import "strings"
 func GetFlag(countryCode string) string {
 	countryCode = normalizeUpper(countryCode)
 
+	// Historical countries (USSR, Yugoslavia, Czechoslovakia, etc.)
+	// are resolved by alpha-2, alpha-3, CIOC, or alpha-4 code.
+	if hc, ok := lookupHistorical(countryCode); ok {
+		return codeToFlag(hc.Alpha2)
+	}
+
 	switch len(countryCode) {
 	case 2:
 		if code, ok := Cca2CodeMap[countryCode]; ok {
@@ -51,6 +57,13 @@ func GetFlag(countryCode string) string {
 //	name = countries.GetName("🇻🇳")    // Returns "Vietnam"
 func GetName(input string) string {
 	normalized := normalizeUpper(input)
+
+	// Try historical countries first so that ambiguous codes such as
+	// "CS" (Czechoslovakia vs. Serbia and Montenegro) can be resolved
+	// by the more specific alpha-3, CIOC, or alpha-4 input.
+	if hc, ok := lookupHistorical(normalized); ok {
+		return hc.Name
+	}
 
 	// Try alpha-2 code
 	if name, ok := CountryNames[normalized]; ok {
@@ -127,6 +140,18 @@ func GetCountryInfo(input string) CountryInfo {
 	normalized := normalizeUpper(input)
 	if normalized == "" {
 		return CountryInfo{}
+	}
+
+	// Try historical countries first so that ambiguous codes such as
+	// "CS" (Czechoslovakia vs. Serbia and Montenegro) can be resolved
+	// by the more specific alpha-3, CIOC, or alpha-4 input.
+	if hc, ok := lookupHistorical(normalized); ok {
+		return CountryInfo{
+			Alpha2: hc.Alpha2,
+			Alpha3: hc.Alpha3,
+			CIOC:   hc.Cioc,
+			Name:   hc.Name,
+		}
 	}
 
 	// Try exact matches
