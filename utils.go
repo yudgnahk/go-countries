@@ -113,6 +113,8 @@ func lookupAlpha2ByAlias(normalized string) string {
 }
 
 // lookupAlpha2ByFlag tries to find alpha-2 code from flag emoji (regional indicator or tag-sequence).
+// Historical alpha-2 codes (SU, YU, CS, DD, ZR) are also recognised so that
+// GetName / GetCountryInfo can round-trip a historical flag back to a name.
 func lookupAlpha2ByFlag(input string) string {
 	trimmed := strings.TrimSpace(input)
 
@@ -127,6 +129,9 @@ func lookupAlpha2ByFlag(input string) string {
 	if isFlagEmoji(trimmed) {
 		code := flagToCode(trimmed)
 		if _, ok := Cca2CodeMap[code]; ok {
+			return code
+		}
+		if _, ok := historicalByAlpha2[code]; ok {
 			return code
 		}
 	}

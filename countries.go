@@ -104,6 +104,10 @@ func GetName(input string) string {
 					return name
 				}
 			}
+			// Historical flag round-trip (SU, YU, CS, DD, ZR).
+			if hc, ok := lookupHistorical(alpha2); ok {
+				return hc.Name
+			}
 		}
 	}
 
@@ -168,6 +172,19 @@ func GetCountryInfo(input string) CountryInfo {
 		trimmed := strings.TrimSpace(input)
 		if isFlagEmoji(trimmed) || isSpecialFlag(trimmed) {
 			alpha2 = lookupAlpha2ByFlag(trimmed)
+		}
+	}
+
+	// Historical flag round-trip: when the flag emoji resolves to a
+	// historical alpha-2 (SU, YU, CS, DD, ZR), return the full record.
+	if alpha2 != "" {
+		if hc, ok := lookupHistorical(alpha2); ok {
+			return CountryInfo{
+				Alpha2: hc.Alpha2,
+				Alpha3: hc.Alpha3,
+				CIOC:   hc.Cioc,
+				Name:   hc.Name,
+			}
 		}
 	}
 

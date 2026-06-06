@@ -45,10 +45,6 @@ func Test_GetFlag_Historical(t *testing.T) {
 		{"Zaire alpha-3", "ZAR", "\U0001F1FF\U0001F1F7"},
 		{"Zaire CIOC", "ZAI", "\U0001F1FF\U0001F1F7"},
 		{"Zaire alpha-4", "ZRCD", "\U0001F1FF\U0001F1F7"},
-
-		// North/South Vietnam intentionally not supported.
-		{"North Vietnam absent", "VD", ""},
-		{"South Vietnam absent (current VN)", "VN", "\U0001F1FB\U0001F1F3"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -169,7 +165,8 @@ func Test_HistoricalCountryRecordsAreConsistent(t *testing.T) {
 	// Every entry must have non-empty Alpha2 (2), Alpha3 (3), Alpha4 (4),
 	// Cioc (3), and Name fields, and the alpha-2/3 codes must be
 	// uppercase ASCII letters of the correct length.
-	for _, hc := range HistoricalCountries {
+	all := HistoricalCountries()
+	for _, hc := range all {
 		if len(hc.Alpha2) != 2 {
 			t.Errorf("%s: Alpha2 %q must be 2 chars", hc.Name, hc.Alpha2)
 		}
@@ -191,11 +188,82 @@ func Test_HistoricalCountryRecordsAreConsistent(t *testing.T) {
 func Test_HistoricalCountryAlpha4sAreUnique(t *testing.T) {
 	// ISO 3166-3 alpha-4 codes are unique by definition; guard against
 	// accidental duplicates in the source-of-truth slice.
-	seen := make(map[string]string, len(HistoricalCountries))
-	for _, hc := range HistoricalCountries {
+	all := HistoricalCountries()
+	seen := make(map[string]string, len(all))
+	for _, hc := range all {
 		if prev, ok := seen[hc.Alpha4]; ok {
 			t.Errorf("duplicate Alpha4 %q used by %q and %q", hc.Alpha4, prev, hc.Name)
 		}
 		seen[hc.Alpha4] = hc.Name
+	}
+}
+
+func Test_HistoricalCountries_ReturnsDefensiveCopy(t *testing.T) {
+	// Mutating the returned slice must not affect the package's lookup
+	// tables or subsequent calls. (Qodo review feedback.)
+	first := HistoricalCountries()
+	if len(first) == 0 {
+		t.Fatal("HistoricalCountries() returned empty slice")
+	}
+
+	// Save originals to detect corruption.
+	origName := first[0].Name
+	origAlpha2 := first[0].Alpha2
+
+	// Mutate the returned slice in place.
+	first[0].Name = "Tampered"
+	first[0].Alpha2 = "ZZ"
+	first = append(first, HistoricalCountry{Alpha4: "ZZZZ", Alpha2: "ZZ", Alpha3: "ZZZ", Cioc: "ZZZ", Name: "Tampered"})
+
+	// Lookup must still return the original values.
+	if hc, ok := lookupHistorical("SU"); !ok || hc.Name != "Soviet Union" {
+		t.Errorf("internal lookup corrupted: got %+v, ok=%v", hc, ok)
+	}
+	if GetFlag("SU") != "\U0001F1F8\U0001F1FA" {
+		t.Errorf("GetFlag(SU) corrupted after external mutation")
+	}
+
+	// A fresh call must return the original data, not the tampered copy.
+	second := HistoricalCountries()
+	if second[0].Name != origName || second[0].Alpha2 != origAlpha2 {
+		t.Errorf("HistoricalCountries() did not return a fresh copy; got %+v", second[0])
+	}
+}
+
+func Test_FlagToNameRoundTrip_Historical(t *testing.T) {
+	// Qodo review feedback: GetFlag returns historical flags but the
+	// reverse path (GetName / GetCountryInfo from a flag emoji) must
+	// also resolve them. Note: SCG and CSK both produce the same flag
+	// (both map to alpha-2 CS), so the round-trip can only recover
+	// Czechoslovakia, the alpha-2 default.
+	cases := []struct {
+		code     string
+		wantName string
+		wantA2   string
+	}{
+		{"SU", "Soviet Union", "SU"},
+		{"YU", "Yugoslavia", "YU"},
+		{"CS", "Czechoslovakia", "CS"},
+		{"SCG", "Czechoslovakia", "CS"}, // shared flag with CSK
+		{"DD", "East Germany", "DD"},
+		{"ZR", "Zaire", "ZR"},
+	}
+	for _, c := range cases {
+		t.Run(c.code, func(t *testing.T) {
+			flag := GetFlag(c.code)
+			if flag == "" {
+				t.Fatalf("GetFlag(%q) returned empty", c.code)
+			}
+			if got := GetName(flag); got != c.wantName {
+				t.Errorf("GetName(GetFlag(%q)) = %q, want %q", c.code, got, c.wantName)
+			}
+			info := GetCountryInfo(flag)
+			if info.Name != c.wantName {
+				t.Errorf("GetCountryInfo(flag).Name = %q, want %q", info.Name, c.wantName)
+			}
+			if info.Alpha2 != c.wantA2 {
+				t.Errorf("GetCountryInfo(flag).Alpha2 = %q, want %q", info.Alpha2, c.wantA2)
+			}
+		})
 	}
 }

@@ -142,11 +142,12 @@ disambiguate.
 user). Use `CSK` / `TCH` / `CSHH` for Czechoslovakia and `SCG` / `CSXX`
 for Serbia and Montenegro.
 
-The exported `HistoricalCountries` slice is the source of truth and can be
-iterated to enumerate the supported historical nations:
+The exported `HistoricalCountries()` accessor returns a defensive copy
+of the supported historical nations. Mutating the returned slice has
+no effect on the package's lookup tables:
 
 ```go
-for _, hc := range countries.HistoricalCountries {
+for _, hc := range countries.HistoricalCountries() {
     fmt.Printf("%s (%s) → %s\n", hc.Name, hc.Alpha4, countries.GetFlag(hc.Alpha2))
 }
 ```
@@ -169,7 +170,7 @@ The library provides access to several data maps:
 - `Cca3CodeMap` - map[string]string: ISO alpha-3 to alpha-2 code mappings
 - `CiocCodeMap` - map[string]string: CIOC to alpha-2 code mappings
 - `SpecialEmojiMap` - map[string]string: Special subdivision codes to emoji flags
-- `HistoricalCountries` - []HistoricalCountry: Historical nations supported by the library
+- `HistoricalCountries()` - func() []HistoricalCountry: Returns a defensive copy of the historical nations supported by the library
 - `SpecialCountryMap` - map[string]string: Special subdivision canonical codes
 
 ### Special thanks to those repositories which helps me so much:

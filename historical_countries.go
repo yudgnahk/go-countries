@@ -20,7 +20,7 @@ type HistoricalCountry struct {
 	Name   string // Canonical English name
 }
 
-// HistoricalCountries lists nations that have participated in the FIFA
+// historicalCountries lists nations that have participated in the FIFA
 // World Cup finals but no longer exist as independent countries.
 //
 // Order matters for ambiguous alpha-2 codes: the FIRST entry with a given
@@ -33,13 +33,27 @@ type HistoricalCountry struct {
 // these render as a generic "missing flag" placeholder because the codes
 // are deprecated in CLDR; consumers that want proper historical flag
 // glyphs should load a webfont such as BabelStone Flags.
-var HistoricalCountries = []HistoricalCountry{
+var historicalCountries = []HistoricalCountry{
 	{Alpha4: "SUHH", Alpha2: "SU", Alpha3: "SUN", Cioc: "URS", Name: "Soviet Union"},
 	{Alpha4: "YUCS", Alpha2: "YU", Alpha3: "YUG", Cioc: "YUG", Name: "Yugoslavia"},
 	{Alpha4: "CSHH", Alpha2: "CS", Alpha3: "CSK", Cioc: "TCH", Name: "Czechoslovakia"},
 	{Alpha4: "CSXX", Alpha2: "CS", Alpha3: "SCG", Cioc: "SCG", Name: "Serbia and Montenegro"},
 	{Alpha4: "DDDE", Alpha2: "DD", Alpha3: "DDR", Cioc: "GDR", Name: "East Germany"},
 	{Alpha4: "ZRCD", Alpha2: "ZR", Alpha3: "ZAR", Cioc: "ZAI", Name: "Zaire"},
+}
+
+// HistoricalCountries returns a snapshot of all historical nations
+// supported by the library. A defensive copy is returned so that
+// external mutations cannot desynchronize the internal lookup indices
+// (which are built once in init()).
+//
+// The slice order matches the underlying source-of-truth list and
+// therefore also defines the disambiguation default for the ambiguous
+// alpha-2 code "CS" (Czechoslovakia wins over Serbia and Montenegro).
+func HistoricalCountries() []HistoricalCountry {
+	out := make([]HistoricalCountry, len(historicalCountries))
+	copy(out, historicalCountries)
+	return out
 }
 
 // historicalByAlpha4 is the master index keyed by the unique ISO 3166-3
@@ -58,15 +72,15 @@ var historicalByAlpha3 map[string]string
 var historicalByCioc map[string]string
 
 func init() {
-	historicalByAlpha4 = make(map[string]HistoricalCountry, len(HistoricalCountries))
-	historicalByAlpha2 = make(map[string]string, len(HistoricalCountries))
-	historicalByAlpha3 = make(map[string]string, len(HistoricalCountries))
-	historicalByCioc = make(map[string]string, len(HistoricalCountries))
+	historicalByAlpha4 = make(map[string]HistoricalCountry, len(historicalCountries))
+	historicalByAlpha2 = make(map[string]string, len(historicalCountries))
+	historicalByAlpha3 = make(map[string]string, len(historicalCountries))
+	historicalByCioc = make(map[string]string, len(historicalCountries))
 
-	for _, hc := range HistoricalCountries {
+	for _, hc := range historicalCountries {
 		historicalByAlpha4[hc.Alpha4] = hc
 		// First writer wins for alpha-2 so the ordering in
-		// HistoricalCountries defines the disambiguation default.
+		// historicalCountries defines the disambiguation default.
 		if _, exists := historicalByAlpha2[hc.Alpha2]; !exists {
 			historicalByAlpha2[hc.Alpha2] = hc.Alpha4
 		}
